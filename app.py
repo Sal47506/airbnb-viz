@@ -95,7 +95,7 @@ if df is not None:
         st.warning("⚠️ No listings found with the current filters. Please adjust your criteria.")
     else:
         # Create tabs for different visualizations
-        tab1, tab2, tab3 = st.tabs(["📊 Price Analysis", "📈 Reviews vs Price", "🗺️ Geographic Map"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Price Analysis", "📈 Reviews vs Price", "🗺️ Geographic Map", "🏘️ Neighborhood Insights"])
         
         with tab1:
             st.subheader("Average Price by Room Type")
@@ -243,6 +243,176 @@ if df is not None:
                     st.write(f"**Southernmost**: {southernmost['neighbourhood_cleansed']}")
             else:
                 st.warning("⚠️ No listings found with current filters to display on map.")
+        
+        with tab4:
+            st.subheader("🏘️ Comprehensive Neighborhood Analysis")
+            
+            # Prepare neighborhood data
+            neighborhood_data = df.groupby('neighbourhood_cleansed').agg({
+                'price': ['mean', 'median', 'count'],
+                'number_of_reviews': 'mean',
+                'accommodates': 'mean',
+                'availability_365': 'mean',
+                'host_is_superhost': lambda x: (x == 't').sum() / len(x) * 100,
+                'review_scores_rating': 'mean',
+                'instant_bookable': lambda x: (x == 't').sum() / len(x) * 100
+            }).round(2)
+            
+            # Flatten column names
+            neighborhood_data.columns = ['avg_price', 'median_price', 'total_listings', 'avg_reviews', 
+                                       'avg_accommodates', 'avg_availability', 'superhost_pct', 
+                                       'avg_rating', 'instant_bookable_pct']
+            neighborhood_data = neighborhood_data.reset_index()
+            
+            # Filter for neighborhoods with at least 3 listings for meaningful analysis
+            neighborhood_data = neighborhood_data[neighborhood_data['total_listings'] >= 3]
+            
+            if len(neighborhood_data) > 0:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("**💰 Average Price by Neighborhood**")
+                    
+                    # Price comparison chart
+                    price_chart = alt.Chart(neighborhood_data.nlargest(10, 'avg_price')).mark_bar().encode(
+                        y=alt.Y('neighbourhood_cleansed:N', title='Neighborhood', sort='-x'),
+                        x=alt.X('avg_price:Q', title='Average Price ($)'),
+                        color=alt.Color('avg_price:Q', scale=alt.Scale(scheme='oranges'), legend=None),
+                        tooltip=['neighbourhood_cleansed:N', 'avg_price:Q', 'total_listings:Q']
+                    ).properties(
+                        height=300,
+                        title="Top 10 Most Expensive Neighborhoods"
+                    )
+                    
+                    st.altair_chart(price_chart, use_container_width=True)
+                
+                with col2:
+                    st.markdown("**📊 Listings Count by Neighborhood**")
+                    
+                    # Listings count chart
+                    count_chart = alt.Chart(neighborhood_data.nlargest(10, 'total_listings')).mark_bar().encode(
+                        y=alt.Y('neighbourhood_cleansed:N', title='Neighborhood', sort='-x'),
+                        x=alt.X('total_listings:Q', title='Number of Listings'),
+                        color=alt.Color('total_listings:Q', scale=alt.Scale(scheme='blues'), legend=None),
+                        tooltip=['neighbourhood_cleansed:N', 'total_listings:Q', 'avg_price:Q']
+                    ).properties(
+                        height=300,
+                        title="Top 10 Neighborhoods by Listing Count"
+                    )
+                    
+                    st.altair_chart(count_chart, use_container_width=True)
+                
+                # Host Quality Analysis
+                st.markdown("---")
+                st.markdown("**⭐ Host Quality & Availability Analysis**")
+                
+                col3, col4 = st.columns(2)
+                
+                with col3:
+                    # Superhost percentage
+                    superhost_chart = alt.Chart(neighborhood_data[neighborhood_data['superhost_pct'] > 0]).mark_circle(size=100).encode(
+                        x=alt.X('superhost_pct:Q', title='Superhost Percentage (%)'),
+                        y=alt.Y('avg_rating:Q', title='Average Rating', scale=alt.Scale(domain=[4.0, 5.0])),
+                        size=alt.Size('total_listings:Q', scale=alt.Scale(range=[50, 300]), title='Listings'),
+                        color=alt.Color('avg_price:Q', scale=alt.Scale(scheme='viridis'), title='Avg Price ($)'),
+                        tooltip=['neighbourhood_cleansed:N', 'superhost_pct:Q', 'avg_rating:Q', 
+                                'total_listings:Q', 'avg_price:Q']
+                    ).properties(
+                        height=300,
+                        title="Host Quality: Superhosts vs Ratings"
+                    )
+                    
+                    st.altair_chart(superhost_chart, use_container_width=True)
+                
+                with col4:
+                    # Availability analysis
+                    availability_chart = alt.Chart(neighborhood_data).mark_circle(size=100).encode(
+                        x=alt.X('avg_availability:Q', title='Average Availability (days/year)'),
+                        y=alt.Y('avg_price:Q', title='Average Price ($)'),
+                        size=alt.Size('total_listings:Q', scale=alt.Scale(range=[50, 300]), title='Listings'),
+                        color=alt.Color('instant_bookable_pct:Q', scale=alt.Scale(scheme='plasma'), 
+                                      title='Instant Book (%)'),
+                        tooltip=['neighbourhood_cleansed:N', 'avg_availability:Q', 'avg_price:Q',
+                                'instant_bookable_pct:Q', 'total_listings:Q']
+                    ).properties(
+                        height=300,
+                        title="Availability vs Price by Neighborhood"
+                    )
+                    
+                    st.altair_chart(availability_chart, use_container_width=True)
+                
+                # Neighborhood insights table
+                st.markdown("---")
+                st.markdown("**📋 Detailed Neighborhood Comparison**")
+                
+                # Format the data for display
+                display_data = neighborhood_data.copy()
+                display_data['avg_price'] = display_data['avg_price'].round(0).astype(int)
+                display_data['avg_reviews'] = display_data['avg_reviews'].round(1)
+                display_data['avg_accommodates'] = display_data['avg_accommodates'].round(1)
+                display_data['avg_availability'] = display_data['avg_availability'].round(0).astype(int)
+                display_data['superhost_pct'] = display_data['superhost_pct'].round(1)
+                display_data['avg_rating'] = display_data['avg_rating'].round(2)
+                display_data['instant_bookable_pct'] = display_data['instant_bookable_pct'].round(1)
+                
+                # Rename columns for better display
+                display_data = display_data.rename(columns={
+                    'neighbourhood_cleansed': 'Neighborhood',
+                    'avg_price': 'Avg Price ($)',
+                    'total_listings': 'Total Listings',
+                    'avg_reviews': 'Avg Reviews',
+                    'avg_accommodates': 'Avg Size',
+                    'avg_availability': 'Availability (days)',
+                    'superhost_pct': 'Superhosts (%)',
+                    'avg_rating': 'Avg Rating',
+                    'instant_bookable_pct': 'Instant Book (%)'
+                })
+                
+                # Allow sorting by different metrics
+                sort_option = st.selectbox(
+                    "Sort neighborhoods by:",
+                    ["Avg Price ($)", "Total Listings", "Avg Reviews", "Superhosts (%)", "Avg Rating"],
+                    index=0
+                )
+                
+                ascending = st.checkbox("Sort ascending", value=False)
+                
+                sorted_data = display_data.sort_values(by=sort_option, ascending=ascending)
+                
+                st.dataframe(
+                    sorted_data,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Avg Price ($)": st.column_config.NumberColumn(format="$%.0f"),
+                        "Avg Reviews": st.column_config.NumberColumn(format="%.1f"),
+                        "Avg Size": st.column_config.NumberColumn(format="%.1f"),
+                        "Superhosts (%)": st.column_config.ProgressColumn(min_value=0, max_value=100),
+                        "Avg Rating": st.column_config.NumberColumn(format="%.2f"),
+                        "Instant Book (%)": st.column_config.ProgressColumn(min_value=0, max_value=100)
+                    }
+                )
+                
+                # Key insights
+                st.markdown("**🔍 Key Insights**")
+                insights_col1, insights_col2 = st.columns(2)
+                
+                with insights_col1:
+                    highest_price = display_data.loc[display_data['Avg Price ($)'].idxmax()]
+                    most_listings = display_data.loc[display_data['Total Listings'].idxmax()]
+                    st.write(f"💎 **Most Expensive**: {highest_price['Neighborhood']} (${highest_price['Avg Price ($)']})")
+                    st.write(f"🏢 **Most Listings**: {most_listings['Neighborhood']} ({most_listings['Total Listings']} listings)")
+                
+                with insights_col2:
+                    if 'Superhosts (%)' in display_data.columns and display_data['Superhosts (%)'].max() > 0:
+                        best_hosts = display_data.loc[display_data['Superhosts (%)'].idxmax()]
+                        st.write(f"⭐ **Best Host Quality**: {best_hosts['Neighborhood']} ({best_hosts['Superhosts (%)']}% superhosts)")
+                    
+                    best_rated = display_data.loc[display_data['Avg Rating'].idxmax()]
+                    st.write(f"🌟 **Highest Rated**: {best_rated['Neighborhood']} ({best_rated['Avg Rating']} stars)")
+            
+            else:
+                st.warning("⚠️ Not enough data for neighborhood analysis with current filters.")
     
     # Additional insights
     st.markdown("---")

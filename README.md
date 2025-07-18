@@ -9,6 +9,7 @@ An interactive Streamlit dashboard for exploring Airbnb listings data with beaut
   - Price analysis by room type
   - Price vs reviews scatter plot
   - Geographic map with pricing data
+  - Comprehensive neighborhood insights and comparisons
 - **Real-time Metrics**: Total listings, average prices, and neighborhood insights
 - **Data Insights**: Top expensive neighborhoods and most reviewed properties
 
