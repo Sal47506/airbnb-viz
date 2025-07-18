@@ -5,7 +5,7 @@ import numpy as np
 
 # Configure Streamlit page
 st.set_page_config(
-    page_title="Inside Airbnb Dashboard",
+    page_title="Inside Airbnb Dashboard for Albany, NY",
     page_icon="🏠",
     layout="wide"
 )
@@ -76,8 +76,8 @@ if df is not None:
     filtered = filtered[filtered['price'].between(price_min, price_max)]
     
     # Main content
-    st.title("🏠 Inside Airbnb Dashboard")
-    st.markdown("### Explore Airbnb listings with interactive visualizations")
+    st.title("🏠 Inside Airbnb Dashboard for Albany, NY")
+    st.markdown("### Explore Airbnb listings in Albany, NY with interactive visualizations")
     
     # Display metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -98,7 +98,7 @@ if df is not None:
         tab1, tab2, tab3, tab4 = st.tabs(["📊 Price Analysis", "📈 Reviews vs Price", "🗺️ Geographic Map", "🏘️ Neighborhood Insights"])
         
         with tab1:
-            st.subheader("Average Price by Room Type")
+            st.subheader("Average Price by Room Type in Albany, NY")
             
             # Calculate data for the neighborhood context
             comparison_data = df.copy() if neighborhood == 'All' else df[df['neighbourhood_cleansed'] == neighborhood]
@@ -111,13 +111,13 @@ if df is not None:
             ).properties(
                 width='container',
                 height=400,
-                title=f"Average Price by Room Type{' - ' + neighborhood if neighborhood != 'All' else ''}"
+                title=f"Albany, NY - Average Price by Room Type{' - ' + neighborhood if neighborhood != 'All' else ''}"
             )
             
             st.altair_chart(bar, use_container_width=True)
         
         with tab2:
-            st.subheader("Price vs Number of Reviews")
+            st.subheader("Price vs Number of Reviews in Albany, NY")
             
             scatter = alt.Chart(filtered).mark_circle(size=60, opacity=0.7).encode(
                 x=alt.X('price:Q', title='Price per Night ($)'),
@@ -128,13 +128,13 @@ if df is not None:
             ).interactive().properties(
                 width='container',
                 height=500,
-                title="Explore the relationship between price and popularity"
+                title="Albany, NY - Explore the relationship between price and popularity"
             )
             
             st.altair_chart(scatter, use_container_width=True)
         
         with tab3:
-            st.subheader("Geographic Distribution of Listings")
+            st.subheader("Geographic Distribution of Listings in Albany, NY")
             
             # Limit map data for performance
             map_data = filtered.sample(min(500, len(filtered))) if len(filtered) > 500 else filtered
@@ -144,7 +144,7 @@ if df is not None:
                 col1, col2 = st.columns([3, 1])
                 
                 with col1:
-                    st.markdown("**🗺️ Interactive Map of Albany Airbnb Listings**")
+                    st.markdown("**🗺️ Interactive Map of Albany, NY Airbnb Listings**")
                     
                     # Prepare data for Streamlit's native map
                     map_df = map_data[['latitude', 'longitude', 'price', 'name', 'neighbourhood_cleansed', 'number_of_reviews']].copy()
@@ -184,43 +184,9 @@ if df is not None:
                     st.write(f"Max: ${map_data['price'].max():.0f}")
                     st.write(f"Avg: ${map_data['price'].mean():.0f}")
                 
-                # Alternative detailed map using Altair for more customization
-                st.markdown("---")
-                st.markdown("**📍 Detailed Interactive Chart**")
-                
-                # Create a more detailed scatter plot map
-                detailed_map = alt.Chart(map_data).mark_circle(opacity=0.7).encode(
-                    longitude='longitude:Q',
-                    latitude='latitude:Q',
-                    size=alt.Size('price:Q', 
-                                scale=alt.Scale(range=[50, 400]), 
-                                title='Price ($)'),
-                    color=alt.Color('price:Q', 
-                                  scale=alt.Scale(scheme='plasma'),
-                                  title='Price ($)'),
-                    stroke=alt.value('white'),
-                    strokeWidth=alt.value(1),
-                    tooltip=[
-                        alt.Tooltip('name:N', title='Listing Name'),
-                        alt.Tooltip('neighbourhood_cleansed:N', title='Neighborhood'),
-                        alt.Tooltip('price:Q', title='Price ($)', format='$.0f'),
-                        alt.Tooltip('number_of_reviews:Q', title='Reviews'),
-                        alt.Tooltip('latitude:Q', title='Latitude', format='.4f'),
-                        alt.Tooltip('longitude:Q', title='Longitude', format='.4f')
-                    ]
-                ).properties(
-                    width='container',
-                    height=400,
-                    title="Albany Airbnb Listings - Hover for Details"
-                ).resolve_scale(
-                    size='independent'
-                )
-                
-                st.altair_chart(detailed_map, use_container_width=True)
-                
                 if len(filtered) > 500:
                     st.info(f"ℹ️ Showing a sample of 500 listings out of {len(filtered)} for map performance.")
-                    
+                
                 # Geographic insights
                 st.markdown("**🏘️ Geographic Insights**")
                 coord_col1, coord_col2 = st.columns(2)
@@ -245,7 +211,7 @@ if df is not None:
                 st.warning("⚠️ No listings found with current filters to display on map.")
         
         with tab4:
-            st.subheader("🏘️ Comprehensive Neighborhood Analysis")
+            st.subheader("🏘️ Comprehensive Neighborhood Analysis - Albany, NY")
             
             # Prepare neighborhood data
             neighborhood_data = df.groupby('neighbourhood_cleansed').agg({
@@ -281,7 +247,7 @@ if df is not None:
                         tooltip=['neighbourhood_cleansed:N', 'avg_price:Q', 'total_listings:Q']
                     ).properties(
                         height=300,
-                        title="Top 10 Most Expensive Neighborhoods"
+                        title="Top 10 Most Expensive Neighborhoods in Albany, NY"
                     )
                     
                     st.altair_chart(price_chart, use_container_width=True)
@@ -297,7 +263,7 @@ if df is not None:
                         tooltip=['neighbourhood_cleansed:N', 'total_listings:Q', 'avg_price:Q']
                     ).properties(
                         height=300,
-                        title="Top 10 Neighborhoods by Listing Count"
+                        title="Top 10 Neighborhoods by Listing Count in Albany, NY"
                     )
                     
                     st.altair_chart(count_chart, use_container_width=True)
@@ -319,7 +285,7 @@ if df is not None:
                                 'total_listings:Q', 'avg_price:Q']
                     ).properties(
                         height=300,
-                        title="Host Quality: Superhosts vs Ratings"
+                        title="Albany, NY - Host Quality: Superhosts vs Ratings"
                     )
                     
                     st.altair_chart(superhost_chart, use_container_width=True)
@@ -336,7 +302,7 @@ if df is not None:
                                 'instant_bookable_pct:Q', 'total_listings:Q']
                     ).properties(
                         height=300,
-                        title="Availability vs Price by Neighborhood"
+                        title="Albany, NY - Availability vs Price by Neighborhood"
                     )
                     
                     st.altair_chart(availability_chart, use_container_width=True)
